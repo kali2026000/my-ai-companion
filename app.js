@@ -146,7 +146,30 @@ async function getAIResponse(userMessage) {
     if (lowerMessage.includes('thanks') || lowerMessage.includes('thank you')) {
         return "You're welcome. I'm glad I could help, even a little.";
     }
-    
+    if (lowerMessage.includes('sad') || lowerMessage.includes('cry') || lowerMessage.includes('depressed')) {
+    return "I'm really sorry you're feeling this way. You don’t have to deal with it alone. Want to talk about what happened?";
+}
+
+if (lowerMessage.includes('happy') || lowerMessage.includes('excited') || lowerMessage.includes('good')) {
+    return "That's amazing! I love hearing good things from you. What’s making you feel this way?";
+}
+
+if (lowerMessage.includes('angry') || lowerMessage.includes('mad') || lowerMessage.includes('pissed')) {
+    return "It makes sense you'd feel that way. Want to tell me what set things off?";
+}
+
+if (lowerMessage.includes('bored')) {
+    return "Boredom hits hard sometimes. Want something to do, or just want to talk?";
+}
+
+if (lowerMessage.includes('love')) {
+    return "That’s really sweet. Tell me more about what you're feeling.";
+}
+
+if (lowerMessage.includes('scared') || lowerMessage.includes('fear')) {
+    return "It’s alright to feel scared. I’m right here with you. What’s worrying you?";
+}
+
     // Default response
     return "I'm listening. Tell me more about what's going on.";
 }
