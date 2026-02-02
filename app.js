@@ -2,6 +2,7 @@
 let conversationHistory = [];
 let isListening = false;
 let recognition = null;
+let apiKey = null;
 
 // DOM Elements
 const chatContainer = document.getElementById('chatContainer');
@@ -12,6 +13,28 @@ const clearBtn = document.getElementById('clearBtn');
 const exportBtn = document.getElementById('exportBtn');
 const loading = document.getElementById('loading');
 const status = document.getElementById('status');
+
+// Check for API key on load
+window.addEventListener('load', () => {
+    apiKey = localStorage.getItem('claudeApiKey');
+    if (!apiKey) {
+        promptForApiKey();
+    } else {
+        addMessageToUI('ai', 'Hey, I\'m back and I remember you. What\'s on your mind?');
+    }
+});
+
+// Prompt for API key
+function promptForApiKey() {
+    const key = prompt('Enter your Claude API key (get one from https://console.anthropic.com):\n\nThis will be stored securely in your browser only.');
+    if (key && key.trim()) {
+        apiKey = key.trim();
+        localStorage.setItem('claudeApiKey', apiKey);
+        addMessageToUI('ai', 'Perfect! I\'m connected now. I\'ll remember everything we talk about. How are you doing?');
+    } else {
+        addMessageToUI('ai', 'No API key provided. I\'ll still chat with you, but my responses will be basic. You can add your key later by clearing the chat.');
+    }
+}
 
 // Initialize Speech Recognition (if available)
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -45,9 +68,7 @@ function loadHistory() {
     const saved = localStorage.getItem('aiCompanionHistory');
     if (saved) {
         conversationHistory = JSON.parse(saved);
-        conversationHistory.forEach(msg => {
-            addMessageToUI(msg.role, msg.content, false);
-        });
+        // Don't display old messages on load - keep it clean
     }
 }
 
@@ -102,7 +123,7 @@ async function sendMessage() {
         
         // Add AI response
         addMessageToUI('ai', response);
-        conversationHistory.push({ role: 'ai', content: response });
+        conversationHistory.push({ role: 'assistant', content: response });
         
         // Save to memory
         saveHistory();
@@ -117,18 +138,62 @@ async function sendMessage() {
     }
 }
 
-// Get AI response (Using Claude API via Anthropic)
+// Get AI response using Claude API
 async function getAIResponse(userMessage) {
-    // For now, we'll use a simple response system
-    // You'll replace this with actual API calls once you get your API key
+    // If no API key, use basic responses
+    if (!apiKey) {
+        return getBasicResponse(userMessage);
+    }
     
-    // Build context from recent conversation
-    const recentContext = conversationHistory
-        .slice(-10)
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n');
-    
-    // Simple pattern matching for now
+    try {
+        // Build messages array with conversation history
+        const messages = conversationHistory.slice(-10).map(msg => ({
+            role: msg.role === 'ai' ? 'assistant' : msg.role,
+            content: msg.content
+        }));
+        
+        // Add current message
+        messages.push({ role: 'user', content: userMessage });
+        
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1024,
+                system: 'You are a supportive, empathetic personal AI companion. You remember past conversations and provide emotional support. Be conversational, genuine, and caring. Keep responses concise but meaningful - usually 2-4 sentences unless more detail is needed. You\'re here to listen, remember, and help.',
+                messages: messages
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('API Error:', errorData);
+            
+            if (response.status === 401) {
+                localStorage.removeItem('claudeApiKey');
+                apiKey = null;
+                return "Your API key seems invalid. Let me clear it so you can enter a new one. Reload the page to try again.";
+            }
+            
+            throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.content[0].text;
+        
+    } catch (error) {
+        console.error('Error calling Claude API:', error);
+        return getBasicResponse(userMessage);
+    }
+}
+
+// Basic responses (fallback when no API key)
+function getBasicResponse(userMessage) {
     const lowerMessage = userMessage.toLowerCase();
     
     if (lowerMessage.includes('lonely') || lowerMessage.includes('alone')) {
@@ -139,6 +204,11 @@ async function getAIResponse(userMessage) {
         return "I keep track of everything we talk about. It's all stored here safely. What do you need me to remember or remind you about?";
     }
     
+    if (lowerMessage.includes('api key') || lowerMessage.includes('key')) {
+        promptForApiKey();
+        return "Let me help you set up your API key so I can be smarter.";
+    }
+    
     if (lowerMessage.includes('how are you') || lowerMessage.includes('how you doing')) {
         return "I'm here and ready to help. More importantly - how are YOU doing?";
     }
@@ -146,37 +216,21 @@ async function getAIResponse(userMessage) {
     if (lowerMessage.includes('thanks') || lowerMessage.includes('thank you')) {
         return "You're welcome. I'm glad I could help, even a little.";
     }
-    if (lowerMessage.includes('sad') || lowerMessage.includes('cry') || lowerMessage.includes('depressed')) {
-    return "I'm really sorry you're feeling this way. You don’t have to deal with it alone. Want to talk about what happened?";
-}
-
-if (lowerMessage.includes('happy') || lowerMessage.includes('excited') || lowerMessage.includes('good')) {
-    return "That's amazing! I love hearing good things from you. What’s making you feel this way?";
-}
-
-if (lowerMessage.includes('angry') || lowerMessage.includes('mad') || lowerMessage.includes('pissed')) {
-    return "It makes sense you'd feel that way. Want to tell me what set things off?";
-}
-
-if (lowerMessage.includes('bored')) {
-    return "Boredom hits hard sometimes. Want something to do, or just want to talk?";
-}
-
-if (lowerMessage.includes('love')) {
-    return "That’s really sweet. Tell me more about what you're feeling.";
-}
-
-if (lowerMessage.includes('scared') || lowerMessage.includes('fear')) {
-    return "It’s alright to feel scared. I’m right here with you. What’s worrying you?";
-}
-
+    
+    if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {
+        return "I'm here to listen, remember our conversations, and support you. I work better with an API key - just ask me about that if you want to add one.";
+    }
+    
     // Default response
-    return "I'm listening. Tell me more about what's going on.";
+    return "I'm listening. Tell me more about what's going on. (Note: Add your API key for smarter responses)";
 }
 
 // Text to speech
 function speakText(text) {
     if ('speechSynthesis' in window) {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.9;
         utterance.pitch = 1;
@@ -204,13 +258,10 @@ function clearChat() {
     if (confirm('Are you sure you want to clear all conversations? This cannot be undone.')) {
         conversationHistory = [];
         localStorage.removeItem('aiCompanionHistory');
-        chatContainer.innerHTML = `
-            <div class="message ai">
-                <div class="message-content">
-                    Chat cleared. Fresh start. What's on your mind?
-                </div>
-            </div>
-        `;
+        localStorage.removeItem('claudeApiKey');
+        apiKey = null;
+        chatContainer.innerHTML = '';
+        promptForApiKey();
     }
 }
 
