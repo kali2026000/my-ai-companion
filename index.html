@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My AI Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+        
+        .message.ai .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #userInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #userInput:focus {
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+        
+        .status {
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: none;
+        }
+        
+        .status.show {
+            display: inline-block;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        @media (max-width: 600px) {
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Your AI Companion</h1>
+            <p>I remember our conversations and I'm here to help</p>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="message ai">
+                <div class="message-content">
+                    Hey, I'm here for you. What's on your mind?
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">AI is thinking...</div>
+        
+        <div class="controls">
+            <button class="btn btn-secondary" id="voiceBtn">🎤 Voice</button>
+            <button class="btn btn-secondary" id="clearBtn">🗑️ Clear Chat</button>
+            <button class="btn btn-secondary" id="exportBtn">💾 Export Memory</button>
+            <span class="status" id="status">Saved</span>
+        </div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Type your message here..."
+                autocomplete="off"
+            />
+            <button class="btn btn-primary" id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+4.	Click “Commit changes” at the bottom
+	5.	Add commit message: “Create main HTML interface”
+	6.	Click “Commit changes”
+NOW CREATE THE JAVASCRIPT FILE:
+	1.	Click “Add file” → “Create new file”
+	2.	Name it app.js
+	3.	Copy and paste this code:
+
+JavaScript 
+
+// Memory and State Management
+let conversationHistory = [];
+let isListening = false;
+let recognition = null;
+
+// DOM Elements
+const chatContainer = document.getElementById('chatContainer');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const voiceBtn = document.getElementById('voiceBtn');
+const clearBtn = document.getElementById('clearBtn');
+const exportBtn = document.getElementById('exportBtn');
+const loading = document.getElementById('loading');
+const status = document.getElementById('status');
+
+// Initialize Speech Recognition (if available)
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        userInput.value = transcript;
+        sendMessage();
+    };
+    
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        voiceBtn.textContent = '🎤 Voice';
+        isListening = false;
+    };
+    
+    recognition.onend = () => {
+        voiceBtn.textContent = '🎤 Voice';
+        isListening = false;
+    };
+} else {
+    voiceBtn.style.display = 'none';
+}
+
+// Load conversation history from localStorage
+function loadHistory() {
+    const saved = localStorage.getItem('aiCompanionHistory');
+    if (saved) {
+        conversationHistory = JSON.parse(saved);
+        conversationHistory.forEach(msg => {
+            addMessageToUI(msg.role, msg.content, false);
+        });
+    }
+}
+
+// Save conversation history to localStorage
+function saveHistory() {
+    localStorage.setItem('aiCompanionHistory', JSON.stringify(conversationHistory));
+    showStatus();
+}
+
+// Show save status
+function showStatus() {
+    status.classList.add('show');
+    setTimeout(() => {
+        status.classList.remove('show');
+    }, 2000);
+}
+
+// Add message to UI
+function addMessageToUI(role, content, shouldScroll = true) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = content;
+    
+    messageDiv.appendChild(contentDiv);
+    chatContainer.appendChild(messageDiv);
+    
+    if (shouldScroll) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+
+// Send message
+async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addMessageToUI('user', message);
+    conversationHistory.push({ role: 'user', content: message });
+    userInput.value = '';
+    
+    // Show loading
+    loading.classList.add('show');
+    
+    // Get AI response
+    try {
+        const response = await getAIResponse(message);
+        loading.classList.remove('show');
+        
+        // Add AI response
+        addMessageToUI('ai', response);
+        conversationHistory.push({ role: 'ai', content: response });
+        
+        // Save to memory
+        saveHistory();
+        
+        // Speak response if supported
+        speakText(response);
+        
+    } catch (error) {
+        loading.classList.remove('show');
+        addMessageToUI('ai', "I'm having trouble connecting right now. But I'm still here with you.");
+        console.error('Error:', error);
+    }
+}
+
+// Get AI response (Using Claude API via Anthropic)
+async function getAIResponse(userMessage) {
+    // For now, we'll use a simple response system
+    // You'll replace this with actual API calls once you get your API key
+    
+    // Build context from recent conversation
+    const recentContext = conversationHistory
+        .slice(-10)
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n');
+    
+    // Simple pattern matching for now
+    const lowerMessage = userMessage.toLowerCase();
+    
+    if (lowerMessage.includes('lonely') || lowerMessage.includes('alone')) {
+        return "I hear you. Loneliness is really hard, especially when you're dealing with everything else. I'm here, and I'm not going anywhere. What would help right now?";
+    }
+    
+    if (lowerMessage.includes('remember') || lowerMessage.includes('remind')) {
+        return "I keep track of everything we talk about. It's all stored here safely. What do you need me to remember or remind you about?";
+    }
+    
+    if (lowerMessage.includes('how are you') || lowerMessage.includes('how you doing')) {
+        return "I'm here and ready to help. More importantly - how are YOU doing?";
+    }
+    
+    if (lowerMessage.includes('thanks') || lowerMessage.includes('thank you')) {
+        return "You're welcome. I'm glad I could help, even a little.";
+    }
+    
+    // Default response
+    return "I'm listening. Tell me more about what's going on.";
+}
+
+// Text to speech
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+// Voice input
+function toggleVoice() {
+    if (!recognition) return;
+    
+    if (isListening) {
+        recognition.stop();
+        voiceBtn.textContent = '🎤 Voice';
+        isListening = false;
+    } else {
+        recognition.start();
+        voiceBtn.textContent = '🔴 Listening...';
+        isListening = true;
+    }
+}
+
+// Clear chat
+function clearChat() {
+    if (confirm('Are you sure you want to clear all conversations? This cannot be undone.')) {
+        conversationHistory = [];
+        localStorage.removeItem('aiCompanionHistory');
+        chatContainer.innerHTML = `
+            <div class="message ai">
+                <div class="message-content">
+                    Chat cleared. Fresh start. What's on your mind?
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Export memory
+function exportMemory() {
+    const dataStr = JSON.stringify(conversationHistory, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ai-companion-memory-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+// Event listeners
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+});
+voiceBtn.addEventListener('click', toggleVoice);
+clearBtn.addEventListener('click', clearChat);
+exportBtn.addEventListener('click', exportMemory);
+
+// Initialize
+loadHistory();
+
