@@ -26,7 +26,7 @@ function saveApiKey() {
 
 function addMessage(text, isUser) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = isUser ? 'message ai' : 'message ai';
+    messageDiv.className = 'message ai';
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
@@ -78,8 +78,22 @@ async function sendMessage() {
 
         chatMessages.removeChild(typingDiv);
 
+        // More detailed error messages
         if (!response.ok) {
-            throw new Error('API request failed');
+            const errorData = await response.json().catch(() => ({}));
+            let errorMsg = 'API Error: ';
+            
+            if (response.status === 401) {
+                errorMsg += 'Invalid API key. Please check and re-enter it.';
+            } else if (response.status === 429) {
+                errorMsg += 'Rate limit reached. Please wait a moment.';
+            } else if (response.status === 400) {
+                errorMsg += 'Bad request. ' + (errorData.error?.message || '');
+            } else {
+                errorMsg += `Status ${response.status}. ${errorData.error?.message || 'Unknown error'}`;
+            }
+            
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -94,9 +108,13 @@ async function sendMessage() {
         addMessage(assistantMessage, false);
 
     } catch (error) {
-        chatMessages.removeChild(typingDiv);
-        addMessage('Sorry, I encountered an error. Please check your API key and try again.', false);
-        console.error('Error:', error);
+        if (chatMessages.contains(typingDiv)) {
+            chatMessages.removeChild(typingDiv);
+        }
+        
+        // Show the actual error message
+        addMessage('Error: ' + error.message, false);
+        console.error('Full error:', error);
     }
 }
 
@@ -122,3 +140,4 @@ if (userInput) {
 if (apiKey) {
     addMessage('Hey, I\'m here for you. What\'s on your mind?', false);
 }
+
