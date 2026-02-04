@@ -137,7 +137,8 @@ if (userInput) {
 }
 
 // Add initial greeting if API key exists
-if (apiKey) {
+if (apiKey) { 
     addMessage('Hey, I\'m here for you. What\'s on your mind?', false);
 }
+     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
 
